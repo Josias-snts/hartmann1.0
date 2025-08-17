@@ -1,1 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Relatório de Vendas — Irmãos Hartmann</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
+    --border:#2c3448; --green:#10f7a0; --orange:#f59e0b; --blue:#0ea5e9; --red:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:20px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+  .title{font-size:20px;font-weight:800}
+  .link-top{font-size:14px;color:#9bd3ff;text-decoration:none;padding:6px 10px;border-radius:10px;border:1px solid var(--border)}
+  .filters{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+  select,input[type="text"]{
+    width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);
+    background:#0b1220;color:#e5e7eb;
+  }
+  .card{background:var(--card);border-radius:16px;padding:14px;border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .sum{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
+  .sum .chip{border:1px solid var(--border);border-radius:12px;padding:6px 10px}
+  .os-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin:12px 0}
+  .os-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--muted)}
+  .total-chip{border:1px solid var(--border);border-radius:12px;padding:6px 10px;color:#d1fae5;background:#064e3b22}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .btn{height:44px;border-radius:12px;border:0;padding:0 14px;font-weight:800;cursor:pointer}
+  .btn-blue{background:var(--blue);color:#001018}
+  .btn-green{background:var(--green);color:#001c14}
+  .btn-red{background:var(--red);color:#2b0a0a}
+  .btn-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
+  .no-data{border:1px dashed var(--border);border-radius:12px;padding:16px;text-align:center;color:var(--muted)}
+
+  /* Modal */
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+  .modal{background:var(--card);border-radius:16px;max-width:820px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.65)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .x{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:10px;height:36px;padding:0 10px;cursor:pointer}
+  .preview-title{color:var(--muted);font-size:12px;margin-top:10px}
+  .preview{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word; line-height:1.2;
+    margin: 6px 0 0; color: var(--text); background: transparent; padding: 0; border: 0;
+  }
+
+  @media (max-width:720px){
+    .filters{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title">Relatório de Vendas (OS)</div>
+    <div style="display:flex;gap:8px">
+      <a class="link-top" href="menu.html">Voltar ao menu</a>
+      <a class="link-top" href="vendas.html">Nova venda</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="filters">
+      <select id="fDia">
+        <option value="">Dia (Todos)</option>
+      </select>
+      <select id="fMes">
+        <option value="">Mês (Todos)</option>
+      </select>
+      <select id="fAno">
+        <option value="">Ano (Todos)</option>
+      </select>
+      <input type="text" id="fBusca" placeholder="Buscar por cliente, placa, produto...">
+    </div>
+
+    <div class="sum">
+      <div class="chip" id="countChip">0 OS</div>
+      <div class="chip" id="totalChip">TOTAL: R$ 0,00</div>
+    </div>
+
+    <div id="lista"></div>
+  </div>
+
+</div>
+
+<!-- Modal Detalhes -->
+<div id="backdrop" class="backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <div style="font-weight:800">Detalhes da OS</div>
+      <button class="x" id="fechar">Fechar</button>
+    </div>
+
+    <div class="row" style="margin-top:0">
+      <button class="btn btn-green" id="btnReprint">Reimprimir</button>
+      <button class="btn btn-blue"  id="btnDuplicate">Duplicar p/ Vendas</button>
+      <button class="btn btn-outline" id="btnEdit">Editar</button>
+      <button class="btn btn-red" id="btnDelete">Excluir</button>
+    </div>
+
+    <div class="preview-title">Pré-visualização (texto 80mm / 42 colunas)</div>
+    <pre id="preview" class="preview"></pre>
+  </div>
+</div>
+
+<script>
+/* ================= Utils ================= */
+const $ = s => document.querySelector(s);
+const money = v => (isNaN(v)?0:v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pad2 = n => String(n).padStart(2,'0');
+const W = 42;
+
+const padRight = (s,len)=>{ s=String(s||''); return s.length>len? s.slice(0,len): s + ' '.repeat(len-s.length); };
+const center = (s,len)=>{ s=String(s||''); const L=Math.floor((len-s.length)/2); return ' '.repeat(L)+s+' '.repeat(len-s.length-L); };
+function wrapLines(text, width){
+  if (!text) return [];
+  const words = String(text).split(/\s+/);
+  const lines = []; let line='';
+  for (let w of words){
+    if ((line + (line?' ':'') + w).length <= width) line += (line?' ':'') + w;
+    else { if (line) lines.push(line); while(w.length>width){ lines.push(w.slice(0,width)); w=w.slice(width);} line=w; }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function formatDate(ts){
+  const d = new Date(ts);
+  return `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/* ================= Data layer ================= */
+let all = [];         // todas as OS (arquivadas + emitidas)
+let view = [];        // filtradas
+let idxAtual = -1;    // índice no array 'view' para abrir no modal
+
+// Migra chaves antigas (compat)
+(function migrateKeys(){
+  const legacy = localStorage.getItem('osArquivadas');
+  if (legacy && !localStorage.getItem('os_arquivadas')) {
+    localStorage.setItem('os_arquivadas', legacy);
+    localStorage.removeItem('osArquivadas');
+  }
+})();
+
+function loadAll(){
+  const arrs = [];
+  try { arrs.push(JSON.parse(localStorage.getItem('os_arquivadas')||'[]')); } catch { arrs.push([]); }
+  try { arrs.push(JSON.parse(localStorage.getItem('os_emitidas')||'[]')); } catch { arrs.push([]); }
+  // normaliza cada item para garantir createdAt
+  const merged = [];
+  for (const a of arrs){
+    (a||[]).forEach(x=>{
+      const rec = Object.assign({}, x);
+      if (!rec.createdAt) rec.createdAt = Date.now();
+      merged.push(rec);
+    });
+  }
+  // ordena por data desc
+  merged.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+  all = merged;
+}
+
+function computeTotal(rec){
+  if (typeof rec.total === 'number') return rec.total;
+  // tenta via itens
+  if (Array.isArray(rec.itens) && rec.itens.length){
+    let s=0;
+    rec.itens.forEach(it=>{ s += (parseFloat(it.qtd)||0)*(parseFloat(it.unit)||0); });
+    return s;
+  }
+  // tenta via texto
+  if (rec.texto){
+    const m = String(rec.texto).match(/TOTAL DA NOTA:\s*R\$\s*([\d.,]+)/i);
+    if (m) return parseFloat(m[1].replace('.','').replace(',','.'))||0;
+  }
+  return 0;
+}
+
+function buildText(rec){
+  // Se já houver texto pronto, usa
+  const txt = (rec && typeof rec.texto==='string' && rec.texto.trim())
+    ? rec.texto
+    : buildFromParts(rec);
+  // remove escapes literais "\n" se houver
+  return String(txt).replace(/\\n/g, '\n');
+}
+
+function buildFromParts(rec){
+  const d = rec.createdAt ? new Date(rec.createdAt) : new Date();
+  const dataStr = `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  const cliente = String(rec.cliente||'').toUpperCase();
+  const placa   = String(rec.placa||'').toUpperCase();
+  const pedra   = String(rec.pedra||'').toUpperCase();
+  const obs     = String(rec.obs||'').trim().toUpperCase();
+
+  const out=[];
+  out.push(center('IRMAOS HARTMANN', W));
+  out.push(center('ORDEM DE SERVICO', W));
+  out.push('='.repeat(W));
+  out.push(padRight(`DATA: ${dataStr}`, W));
+  out.push(padRight(`CLIENTE: ${cliente}`, W));
+  out.push(padRight(`PLACA: ${placa}`, W));
+  out.push(padRight(`PEDRA: ${pedra}`, W));
+  out.push('-'.repeat(W));
+  out.push(padRight('PRODUTO:', W));
+  out.push('');
+
+  if (obs){
+    wrapLines('OBS: ' + obs, W).forEach(l => out.push(padRight(l, W)));
+    out.push('');
+  }
+
+  let soma=0;
+  const itens = Array.isArray(rec.itens)?rec.itens:[];
+  itens.forEach((it,idx)=>{
+    const qtd  = parseFloat(it.qtd)||0;
+    const unit = parseFloat(it.unit)||0;
+    const tipo = (it.tipo||'').toUpperCase();
+    const nome = String(it.produto||'').toUpperCase();
+    const subtotal = qtd*unit; soma+=subtotal;
+
+    wrapLines(nome, W).forEach(l => out.push(padRight(l, W)));
+    const esquerda = `QTD: ${String(qtd).replace('.',',')} ${tipo} R$ ${money(unit)}`;
+    const direita  = `TOTAL: R$ ${money(subtotal)}`;
+    const espacos  = W - esquerda.length - direita.length;
+    out.push(esquerda + ' '.repeat(espacos>0?espacos:1) + direita);
+
+    if (idx<itens.length-1) out.push('');
+  });
+
+  out.push('-'.repeat(W));
+  const totalNota = `TOTAL DA NOTA: R$ ${money(soma)}`;
+  out.push(' '.repeat(Math.max(0, W - totalNota.length)) + totalNota);
+  out.push('');
+  out.push('Assinatura: __________________________');
+  return out.join('\n');
+}
+
+/* ============== Filtros ============== */
+function unique(values){ return [...new Set(values)]; }
+function fillFilters(){
+  const anos = unique(all.map(r => new Date(r.createdAt).getFullYear())).sort((a,b)=>b-a);
+  const meses = [...Array(12)].map((_,i)=>i+1);
+  const dias = [...Array(31)].map((_,i)=>i+1);
+
+  const fDia = $('#fDia'), fMes = $('#fMes'), fAno = $('#fAno');
+  fDia.innerHTML = '<option value="">Dia (Todos)</option>' + dias.map(d=>`<option value="${d}">${String(d).padStart(2,'0')}</option>`).join('');
+  fMes.innerHTML = '<option value="">Mês (Todos)</option>' + meses.map(m=>`<option value="${m}">${String(m).padStart(2,'0')}</option>`).join('');
+  fAno.innerHTML = '<option value="">Ano (Todos)</option>' + anos.map(a=>`<option value="${a}">${a}</option>`).join('');
+}
+
+function applyFilters(){
+  const vDia = $('#fDia').value;     // '' ou 1..31
+  const vMes = $('#fMes').value;     // '' ou 1..12
+  const vAno = $('#fAno').value;     // '' ou 2025...
+  const q    = ($('#fBusca').value||'').trim().toUpperCase();
+
+  view = all.filter(rec=>{
+    const d = new Date(rec.createdAt);
+    const dia = d.getDate();
+    const mes = d.getMonth()+1;
+    const ano = d.getFullYear();
+
+    if (vAno && ano != vAno) return false;
+    if (vMes && mes != vMes) return false;
+    if (vDia && dia != vDia) return false;
+
+    if (q){
+      const hay = [
+        rec.cliente, rec.placa, rec.pedra, rec.obs,
+        ...(Array.isArray(rec.itens)? rec.itens.map(it=>it.produto): [])
+      ].join(' ').toUpperCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  renderList();
+}
+
+/* ============== Render lista + totais ============== */
+function renderList(){
+  const lista = $('#lista');
+  const countChip = $('#countChip');
+  const totalChip = $('#totalChip');
+
+  if (!view.length){
+    lista.innerHTML = '<div class="no-data">Nenhuma OS encontrada para o filtro.</div>';
+    countChip.textContent = '0 OS';
+    totalChip.textContent = 'TOTAL: R$ 0,00';
+    return;
+  }
+
+  const totalPeriodo = view.reduce((s, rec)=> s + computeTotal(rec), 0);
+  countChip.textContent = `${view.length} OS`;
+  totalChip.textContent = `TOTAL: R$ ${money(totalPeriodo)}`;
+
+  lista.innerHTML = '';
+  view.forEach((rec, i)=>{
+    const total = computeTotal(rec);
+    const card = document.createElement('div');
+    card.className = 'os-card';
+    card.innerHTML = `
+      <div class="os-head">
+        <div>
+          <div style="font-weight:800">${(rec.cliente||'').toUpperCase()}</div>
+          <div class="muted" style="font-size:12px">${formatDate(rec.createdAt)}</div>
+        </div>
+        <div class="total-chip">TOTAL: R$ ${money(total)}</div>
+      </div>
+      <div class="row">
+        <button class="btn btn-blue" onclick="openModal(${i})">Ver detalhes</button>
+      </div>
+    `;
+    lista.appendChild(card);
+  });
+}
+
+/* ============== Modal Detalhes ============== */
+let currentInView = null; // guarda o objeto da view
+
+function openModal(iInView){
+  currentInView = view[iInView] || null;
+  if (!currentInView) return;
+  $('#preview').textContent = buildText(currentInView);
+  $('#backdrop').style.display = 'flex';
+}
+$('#fechar').onclick = () => { $('#backdrop').style.display = 'none'; };
+
+/* Impressão COM LOGO (canvas) — igual vendas */
+function loadImage(src){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+async function printWithLogo(texto){
+  try{
+    const img = await loadImage('img/logo-hartmann.png');
+
+    const Wpx = 576; // 80mm
+    const fontSize = 20, lineH = 26;
+    const topPad = 20, between = 16;
+
+    const lines = String(texto).split('\n');
+    const scale = Math.min((Wpx*0.8)/img.width, 1);
+    const logoW = Math.round(img.width * scale);
+    const logoH = Math.round(img.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Wpx;
+    canvas.height = topPad + logoH + between + lines.length*lineH + 20;
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const logoX = Math.round((Wpx - logoW)/2);
+    ctx.drawImage(img, logoX, topPad, logoW, logoH);
+
+    ctx.fillStyle = '#000000';
+    ctx.font = `${fontSize}px Consolas, Menlo, monospace`;
+    let y = topPad + logoH + between + fontSize;
+    for (const line of lines){
+      const m = ctx.measureText(line);
+      const x = Math.max(0, Math.round((Wpx - m.width)/2));
+      ctx.fillText(line, x, y);
+      y += lineH;
+    }
+
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    if (blob){
+      const file = new File([blob], 'os.png', { type:'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
+        try{ await navigator.share({ files:[file], title:'OS Hartmann' }); return; }catch(e){}
+      }
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      return;
+    }
+  }catch(e){}
+  // Fallback texto
+  if (navigator.share){
+    try{ await navigator.share({ text: texto, title:'OS Hartmann' }); return; }catch(e){}
+  }
+  try{ await navigator.clipboard.writeText(texto); alert('OS copiada! Abra o app de impressão e cole.'); }
+  catch{ alert('Selecione e copie manualmente o texto da prévia.'); }
+}
+
+$('#btnReprint').onclick = async ()=>{
+  if (!currentInView) return;
+  await printWithLogo(buildText(currentInView));
+};
+
+$('#btnDuplicate').onclick = ()=>{
+  if (!currentInView) return;
+  localStorage.setItem('duplicar_para_vendas', JSON.stringify(currentInView));
+  location.href = 'vendas.html';
+};
+
+$('#btnEdit').onclick = ()=>{
+  if (!currentInView) return;
+  localStorage.setItem('editar_os', JSON.stringify(currentInView));
+  location.href = 'vendas.html';
+};
+
+$('#btnDelete').onclick = ()=>{
+  if (!currentInView) return;
+  if (!confirm('Excluir esta OS do relatório?')) return;
+  // remove da origem (procura em os_arquivadas e os_emitidas)
+  const removeFrom = (key)=>{
+    try{
+      const arr = JSON.parse(localStorage.getItem(key)||'[]');
+      const idx = arr.findIndex(x => x.createdAt === currentInView.createdAt);
+      if (idx>-1){ arr.splice(idx,1); localStorage.setItem(key, JSON.stringify(arr)); }
+    }catch{}
+  };
+  removeFrom('os_arquivadas');
+  removeFrom('os_emitidas');
+
+  // recarrega
+  loadAll();
+  applyFilters();
+  $('#backdrop').style.display='none';
+};
+
+/* ============== Init ============== */
+loadAll();
+fillFilters();
+applyFilters();
+
+// filtros / busca
+['fDia','fMes','fAno'].forEach(id => $('#'+id).addEventListener('change', applyFilters));
+$('#fBusca').addEventListener('input', ()=>{
+  // debounce leve
+  clearTimeout(window.__buscaTimer);
+  window.__buscaTimer = setTimeout(applyFilters, 200);
+});
+
+// Reagir a mudanças de storage vindo de outras abas/páginas (ex.: vendas/arquivados)
+window.addEventListener('storage', (e)=>{
+  if (['os_arquivadas','os_emitidas','osArquivadas'].includes(e.key)){
+    loadAll(); applyFilters();
+  }
+});
+</script>
+</body>
+</html>
 
