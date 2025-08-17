@@ -22,7 +22,6 @@
   }
   input[type="number"]{text-transform:none;} /* números não recebem uppercase */
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
   .btn{
     display:flex;align-items:center;justify-content:center;height:56px;border-radius:14px;
     font-weight:800;font-size:18px;border:0;cursor:pointer;user-select:none
@@ -31,6 +30,7 @@
   .btn-orange{background:var(--orange);color:#1f1300}
   .btn-blue{background:var(--blue);color:#001018}
   .btn-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
   .preview-title{color:var(--muted);font-size:12px;margin-top:10px;text-align:left;}
   .preview{
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -83,7 +83,7 @@
 
     <!-- Produto -->
     <label>Produto</label>
-    <input type="text" id="produto" placeholder="MELANCIA" list="produtosList" autocomplete="off">
+    <input type="text" id="produto" placeholder="BERGAMOTA" list="produtosList" autocomplete="off">
     <datalist id="produtosList"></datalist>
 
     <div class="row2">
@@ -92,7 +92,7 @@
         <select id="tipo">
           <option value="CX">CX</option>
           <option value="KG">KG</option>
-          <option value="UN">UN</option>
+          <option value="UN">UN</option><!-- ADICIONADO -->
         </select>
       </div>
       <div>
@@ -116,6 +116,7 @@
       <button class="btn btn-orange" id="btnArchive">Arquivar</button>
     </div>
 
+    <!-- Linha extra: Editar pedido e Limpar tudo -->
     <div class="row3" style="margin-top:10px">
       <button class="btn btn-outline" id="btnEdit">Editar pedido</button>
       <button class="btn btn-outline" id="btnClear">Limpar tudo</button>
@@ -200,22 +201,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) pree
 window.addEventListener('storage', (e) => { if (e.key === 'produtos') preencherDatalistProdutos(); });
 document.getElementById('produto')?.addEventListener('focus', preencherDatalistProdutos);
 
-// Sementes automáticas se estiver vazio
-(function sementesSeVazio(){
-  const existe = localStorage.getItem('produtos');
-  if (!existe) {
-    const seeds = [
-      "ALHO","AIPIM","AIPIM DESCASCADO","ABACATE","ABACAXI","BATATA DOCE ROSA","BATATA DOCE BRANCA",
-      "BERGAMOTA JAPONESA","BERGAMOTA MORGOT","BERGAMOTA CAI","BERGAMOTA DECOPON",
-      "BERGAMOTA PARECI","BERGAMOTA MONTENEGRINA","LARANJA SUCO","LARANJA CÉU",
-      "LARANJA UMBIGO","LIMÃO","MELANCIA","MELÃO ESPANHOL","MANGA TOMY","MANGA PALMER",
-      "MORANGA","PITAYA","MELANCIA AMARELA","MELANCIA PINGO DOCE"
-    ];
-    localStorage.setItem('produtos', JSON.stringify(seeds));
-  }
-})();
-
-/* =================== Adicionar item =================== */
+/* =================== Adicionar / Editar item =================== */
 function addAtualSePreenchido(){
   const produto = ($('#produto').value||'').trim();
   const qtd  = parseNum($('#qtd').value);
@@ -292,7 +278,7 @@ function buildOS(){
     // Nome do produto
     wrapLines((it.produto||'').toUpperCase(), W).forEach(l => out.push(padRight(l, W)));
 
-    // Linha com TOTAL à direita
+    // Linha com TOTAL alinhado à direita
     const esquerda = `QTD: ${String(it.qtd).replace('.',',')} ${it.tipo} R$ ${money(it.unit)}`;
     const direita  = `TOTAL: R$ ${money(subtotal)}`;
     const espacos  = W - esquerda.length - direita.length;
@@ -312,10 +298,111 @@ function buildOS(){
 
 function render(){ $('#preview').textContent = buildOS(); }
 
+/* =================== Impressão =================== */
+async function shareText(text){
+  if (navigator.share){
+    try { await navigator.share({ text, title:'OS Hartmann' }); return true; }
+    catch(e){ /* cancelado ou não suportado */ }
+  }else{
+    try{ await navigator.clipboard.writeText(text); alert('OS copiada! Abra o app da impressora e cole.'); return true; }
+    catch(e){}
+  }
+  return false;
+}
+
+async function printWithLogo(){
+  garantirItemAtual();
+  const texto = buildOS();
+
+  // tenta gerar imagem com logo + texto
+  try{
+    const img = await loadImage('img/logo-hartmann.png');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // largura ~ 576px (bom para 80mm); calcula altura conforme conteúdo
+    const Wpx = 576;
+    const left = 20;
+    const right = 20;
+    const textWidth = Wpx - left - right;
+
+    // configura fonte (monospace para manter alinhamento)
+    const fontSize = 20;            // ajuste fino conforme a sua impressora
+    const lineH   = 26;
+    ctx.font = `${fontSize}px Consolas, Menlo, monospace`;
+
+    // quebra texto em linhas por \n
+    const lines = texto.split('\n');
+
+    // calcula dimensões
+    const logoMaxW = Wpx * 0.8;
+    const scale = Math.min(logoMaxW / img.width, 1);
+    const logoW = Math.round(img.width * scale);
+    const logoH = Math.round(img.height * scale);
+
+    const topPad = 20;
+    const between = 16; // espaço entre logo e texto
+    const textHeight = lines.length * lineH;
+
+    canvas.width  = Wpx;
+    canvas.height = topPad + logoH + between + textHeight + 20;
+
+    // fundo branco para impressão térmica (muitos apps usam)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // desenha logo centralizada
+    const logoX = Math.round((Wpx - logoW)/2);
+    ctx.drawImage(img, logoX, topPad, logoW, logoH);
+
+    // desenha texto centralizado em largura fixa
+    ctx.fillStyle = '#000000';
+    ctx.font = `${fontSize}px Consolas, Menlo, monospace`;
+    let y = topPad + logoH + between + fontSize;
+    for (const line of lines){
+      // centraliza cada linha (medindo largura)
+      const metrics = ctx.measureText(line);
+      const x = Math.max(0, Math.round((Wpx - metrics.width)/2));
+      ctx.fillText(line, x, y);
+      y += lineH;
+    }
+
+    // exporta como PNG
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    if (blob){
+      // tenta compartilhar como arquivo
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob],'os.png',{type:'image/png'})] })){
+        const file = new File([blob], 'os.png', { type: 'image/png' });
+        try { await navigator.share({ files:[file], title:'OS Hartmann' }); return; } catch(e){}
+      }
+      // senão, abre em nova guia para salvar/imprimir
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      return;
+    }
+  }catch(e){
+    // se der qualquer erro, cai no modo texto
+  }
+
+  // fallback: imprime como texto (sem logo)
+  await shareText(texto);
+}
+
+function loadImage(src){
+  return new Promise((resolve, reject)=>{
+    const i = new Image();
+    i.onload = ()=>resolve(i);
+    i.onerror = reject;
+    i.src = src;
+  });
+}
+
 /* =================== Ações principais =================== */
 $('#btnAdd').addEventListener('click', ()=>{
   if(!addAtualSePreenchido()) alert('Preencha PRODUTO e QTD para adicionar.');
 });
+
+$('#btnPrint').addEventListener('click', printWithLogo);
 
 $('#btnArchive').addEventListener('click', ()=>{
   garantirItemAtual();
@@ -334,14 +421,21 @@ $('#btnArchive').addEventListener('click', ()=>{
   alert('OS arquivada!');
 });
 
-/* ----- LIMPAR TUDO (novo cliente) ----- */
+/* =================== Limpar tudo =================== */
 $('#btnClear').addEventListener('click', ()=>{
-  if(!confirm('Limpar tudo e iniciar uma nova venda?')) return;
+  if (!confirm('Limpar todos os itens e cabeçalho para iniciar nova venda?')) return;
   itens = [];
   editIndex = null;
-  ['cliente','placa','pedra','produto','qtd','unit','obs'].forEach(id => { const el=$('#'+id); if(el) el.value=''; });
+  $('#cliente').value = '';
+  $('#placa').value = '';
+  $('#pedra').value = '';
+  $('#obs').value = '';
+  $('#produto').value = '';
+  $('#qtd').value = '';
+  $('#unit').value = '';
   $('#tipo').value = 'CX';
   render();
+  $('#cliente').focus();
 });
 
 /* =================== Modal: editar itens =================== */
@@ -372,11 +466,12 @@ function abrirModalItens(){
       bEdit.className = 'small-btn small-green';
       bEdit.textContent = 'Editar';
       bEdit.onclick = ()=>{
+        // carrega no formulário principal para editar
         $('#produto').value = (it.produto||'').toUpperCase();
         $('#tipo').value    = it.tipo;
         $('#qtd').value     = it.qtd;
         $('#unit').value    = (parseFloat(it.unit)||0).toFixed(2).replace('.',',');
-        editIndex = i; // próxima "Nova venda" salva por cima
+        editIndex = i; // próxima "Nova venda" irá salvar por cima deste item
         $('#backdrop').style.display = 'none';
         $('#produto').focus();
       };
@@ -402,43 +497,8 @@ function abrirModalItens(){
 $('#btnEdit').addEventListener('click', abrirModalItens);
 $('#fecharModal').addEventListener('click', ()=> $('#backdrop').style.display='none');
 
-/* =================== IMPRIMIR: integra Thermer =================== */
-document.getElementById('btnPrint').onclick = async () => {
-  garantirItemAtual();
-  const osText = buildOS();
-
-  // Copia o texto (útil para colar dentro do app caso ele não receba parâmetros)
-  try { await navigator.clipboard.writeText(osText); } catch (e) {}
-
-  // Tenta abrir o app Thermer via intent (Android)
-  const intentUrl   = "intent://print#Intent;scheme=mate.bluetoothprint;package=mate.bluetoothprint;end;";
-  const fallbackUrl = "android-app://mate.bluetoothprint";
-  let opened = false;
-
-  try { window.location.href = intentUrl; opened = true; } catch(e) {}
-  setTimeout(() => {
-    if (!opened) {
-      try { window.location.href = fallbackUrl; opened = true; } catch(e) {}
-    }
-  }, 300);
-
-  // Fallback: share/copiar (iOS/desktop)
-  setTimeout(async () => {
-    if (!opened) {
-      if (navigator.share) {
-        try { await navigator.share({ text: osText, title: 'OS Hartmann' }); }
-        catch (e) {}
-      } else {
-        try { await navigator.clipboard.writeText(osText); alert('OS copiada! Abra o app da impressora e cole.'); }
-        catch (e) { alert('Selecione e copie manualmente da prévia.'); }
-      }
-    }
-  }, 1200);
-};
-
 /* =================== Inicial =================== */
 render();
 </script>
 </body>
 </html>
-
