@@ -54,7 +54,20 @@
   .small-btns{display:flex; gap:8px}
   .small-btn{height:36px; padding:0 12px; border-radius:10px; font-weight:800; border:0; cursor:pointer}
   .small-green{background:var(--green); color:#001c14}
-  .small-outline{background:transparent; color:var(--text); border:2px solid var(--border)}
+  .small-outline{background:transparent; color:#e5e7eb; border:2px solid var(--border)}
+
+  /* ===== Modal de preferência de impressão (pergunta 1x) ===== */
+  .pref-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;
+    align-items:center;justify-content:center;z-index:60;padding:16px}
+  .pref-card{background:#111827;color:#e5e7eb;border:1px solid #2c3448;border-radius:14px;
+    max-width:420px;width:100%;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.6);font-family:system-ui,Arial,sans-serif}
+  .pref-card h3{margin:0 0 10px;font-size:18px}
+  .pref-card p{margin:0 0 12px;font-size:14px;color:#9ca3af}
+  .pref-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .pref-btn{flex:1;min-width:140px;height:44px;border:0;border-radius:12px;font-weight:800;cursor:pointer}
+  .pref-primary{background:#0ea5e9;color:#001018}
+  .pref-ghost{background:transparent;color:#e5e7eb;border:1px solid #2c3448}
+  .pref-link{margin-top:8px;font-size:12px;color:#9bd3ff;cursor:pointer;text-decoration:underline;display:inline-block}
 </style>
 </head>
 <body>
@@ -83,7 +96,7 @@
 
     <!-- Produto -->
     <label>Produto</label>
-    <input type="text" id="produto" placeholder="BANANA" list="produtosList" autocomplete="off">
+    <input type="text" id="produto" placeholder="MELANCIA" list="produtosList" autocomplete="off">
     <datalist id="produtosList"></datalist>
 
     <div class="row2">
@@ -92,7 +105,7 @@
         <select id="tipo">
           <option value="CX">CX</option>
           <option value="KG">KG</option>
-          <option value="UN">UN</option><!-- ADICIONADO -->
+          <option value="UN">UN</option>
         </select>
       </div>
       <div>
@@ -120,7 +133,7 @@
     <div class="row3" style="margin-top:10px">
       <button class="btn btn-outline" id="btnEdit">Editar pedido</button>
       <button class="btn btn-outline" id="btnClear">Limpar tudo</button>
-      <div></div>
+      <span id="changePrefLink" class="pref-link" style="align-self:center;justify-self:start;display:none">Mudar preferência de impressão</span>
     </div>
 
     <!-- Prévia (texto cru, 42 colunas) -->
@@ -138,6 +151,18 @@
     </div>
     <div class="muted">Toque em <b>Editar</b> para carregar o item no formulário e ajustar. Toque em <b>Remover</b> para excluir da OS.</div>
     <div id="itensList" class="itens-list"></div>
+  </div>
+</div>
+
+<!-- ===== Modal de preferência de impressão (mostra só na 1ª vez) ===== -->
+<div id="prefPrint" class="pref-backdrop">
+  <div class="pref-card">
+    <h3>Como você quer imprimir?</h3>
+    <p>Escolha uma opção. Você pode mudar depois.</p>
+    <div class="pref-row">
+      <button id="prefAlwaysRawbt" class="pref-btn pref-primary">Abrir RawBT sempre</button>
+      <button id="prefAskEveryTime" class="pref-btn pref-ghost">Perguntar toda vez</button>
+    </div>
   </div>
 </div>
 
@@ -298,7 +323,7 @@ function buildOS(){
 
 function render(){ $('#preview').textContent = buildOS(); }
 
-/* =================== Impressão =================== */
+/* =================== Impressão COM LOGO (se cair no modo “Perguntar”) =================== */
 async function shareText(text){
   if (navigator.share){
     try { await navigator.share({ text, title:'OS Hartmann' }); return true; }
@@ -314,77 +339,58 @@ async function printWithLogo(){
   garantirItemAtual();
   const texto = buildOS();
 
-  // tenta gerar imagem com logo + texto
   try{
     const img = await loadImage('img/logo-hartmann.png');
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    // largura ~ 576px (bom para 80mm); calcula altura conforme conteúdo
-    const Wpx = 576;
-    const left = 20;
-    const right = 20;
-    const textWidth = Wpx - left - right;
-
-    // configura fonte (monospace para manter alinhamento)
-    const fontSize = 20;            // ajuste fino conforme a sua impressora
-    const lineH   = 26;
+    const Wpx = 576;                  // largura típica 80mm
+    const fontSize = 20, lineH = 26;  // ajuste fino se quiser
     ctx.font = `${fontSize}px Consolas, Menlo, monospace`;
 
-    // quebra texto em linhas por \n
     const lines = texto.split('\n');
 
-    // calcula dimensões
     const logoMaxW = Wpx * 0.8;
     const scale = Math.min(logoMaxW / img.width, 1);
     const logoW = Math.round(img.width * scale);
     const logoH = Math.round(img.height * scale);
 
-    const topPad = 20;
-    const between = 16; // espaço entre logo e texto
+    const topPad = 20, between = 16;
     const textHeight = lines.length * lineH;
 
     canvas.width  = Wpx;
     canvas.height = topPad + logoH + between + textHeight + 20;
 
-    // fundo branco para impressão térmica (muitos apps usam)
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    // desenha logo centralizada
     const logoX = Math.round((Wpx - logoW)/2);
     ctx.drawImage(img, logoX, topPad, logoW, logoH);
 
-    // desenha texto centralizado em largura fixa
     ctx.fillStyle = '#000000';
     ctx.font = `${fontSize}px Consolas, Menlo, monospace`;
     let y = topPad + logoH + between + fontSize;
     for (const line of lines){
-      // centraliza cada linha (medindo largura)
       const metrics = ctx.measureText(line);
       const x = Math.max(0, Math.round((Wpx - metrics.width)/2));
       ctx.fillText(line, x, y);
       y += lineH;
     }
 
-    // exporta como PNG
     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
     if (blob){
-      // tenta compartilhar como arquivo
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob],'os.png',{type:'image/png'})] })){
         const file = new File([blob], 'os.png', { type: 'image/png' });
         try { await navigator.share({ files:[file], title:'OS Hartmann' }); return; } catch(e){}
       }
-      // senão, abre em nova guia para salvar/imprimir
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
       return;
     }
   }catch(e){
-    // se der qualquer erro, cai no modo texto
+    // fallback
   }
 
-  // fallback: imprime como texto (sem logo)
   await shareText(texto);
 }
 
@@ -396,30 +402,6 @@ function loadImage(src){
     i.src = src;
   });
 }
-
-/* =================== Ações principais =================== */
-$('#btnAdd').addEventListener('click', ()=>{
-  if(!addAtualSePreenchido()) alert('Preencha PRODUTO e QTD para adicionar.');
-});
-
-$('#btnPrint').addEventListener('click', printWithLogo);
-
-$('#btnArchive').addEventListener('click', ()=>{
-  garantirItemAtual();
-  const pacote = {
-    createdAt: Date.now(),
-    cliente: ($('#cliente').value||'').trim(),
-    placa: ($('#placa').value||'').trim(),
-    pedra: ($('#pedra').value||'').trim(),
-    obs: ($('#obs').value||'').trim(),
-    itens: itens.slice(),
-    texto: buildOS()
-  };
-  const list = JSON.parse(localStorage.getItem('os_arquivadas')||'[]');
-  list.push(pacote);
-  localStorage.setItem('os_arquivadas', JSON.stringify(list));
-  alert('OS arquivada!');
-});
 
 /* =================== Limpar tudo =================== */
 $('#btnClear').addEventListener('click', ()=>{
@@ -466,12 +448,11 @@ function abrirModalItens(){
       bEdit.className = 'small-btn small-green';
       bEdit.textContent = 'Editar';
       bEdit.onclick = ()=>{
-        // carrega no formulário principal para editar
         $('#produto').value = (it.produto||'').toUpperCase();
         $('#tipo').value    = it.tipo;
         $('#qtd').value     = it.qtd;
         $('#unit').value    = (parseFloat(it.unit)||0).toFixed(2).replace('.',',');
-        editIndex = i; // próxima "Nova venda" irá salvar por cima deste item
+        editIndex = i;
         $('#backdrop').style.display = 'none';
         $('#produto').focus();
       };
@@ -482,7 +463,7 @@ function abrirModalItens(){
       bRem.textContent = 'Remover';
       bRem.onclick = ()=>{
         itens.splice(i,1);
-        abrirModalItens(); // recarrega lista
+        abrirModalItens();
         render();
       };
       btns.appendChild(bRem);
@@ -496,6 +477,84 @@ function abrirModalItens(){
 }
 $('#btnEdit').addEventListener('click', abrirModalItens);
 $('#fecharModal').addEventListener('click', ()=> $('#backdrop').style.display='none');
+
+/* =================== Preferência de impressão (pergunta 1x) =================== */
+const RAWBT_PACKAGE = 'ru.a402d.rawbtprinter';
+function getPrintPref(){ return localStorage.getItem('print_pref') || ''; }
+function setPrintPref(v){ localStorage.setItem('print_pref', v); }
+function ensurePrintPref(){
+  const pref = getPrintPref();
+  if (!pref){
+    document.getElementById('prefPrint').style.display = 'flex';
+    return false;
+  }
+  return true;
+}
+document.getElementById('prefAlwaysRawbt').onclick = ()=>{
+  setPrintPref('rawbt');
+  document.getElementById('prefPrint').style.display = 'none';
+  handlePrintClick(); // dispara impressão já com a escolha
+};
+document.getElementById('prefAskEveryTime').onclick = ()=>{
+  setPrintPref('ask');
+  document.getElementById('prefPrint').style.display = 'none';
+  handlePrintClick();
+};
+(function(){
+  const pref = getPrintPref();
+  const link = document.getElementById('changePrefLink');
+  if (pref){ link.style.display = 'inline-block'; }
+  link?.addEventListener('click', ()=>{
+    document.getElementById('prefPrint').style.display = 'flex';
+  });
+})();
+
+function tryOpenAppUris(uris){
+  return new Promise((resolve)=>{
+    let done = false;
+    const tryNext = (i)=>{
+      if (i >= uris.length){ resolve(false); return; }
+      const uri = uris[i];
+      window.location.href = uri;
+      setTimeout(()=>{ if (!done) tryNext(i+1); }, 700);
+    };
+    tryNext(0);
+    window.addEventListener('visibilitychange', ()=>{
+      if (document.hidden && !done){ done = true; resolve(true); }
+    }, { once:true });
+    setTimeout(()=>{ if (!done) resolve(false); }, 2500);
+  });
+}
+
+function buildTextForPrint(){
+  return buildOS();
+}
+
+async function startPrintFlow(){
+  const pref = getPrintPref() || 'ask';
+  if (pref === 'rawbt'){
+    garantirItemAtual();
+    const txt = buildTextForPrint();
+    const enc = encodeURIComponent(txt);
+    const uri1 = `rawbt://print?text=${enc}`;
+    const uri2 = `rawbt:print?text=${enc}`;
+    const intent = `intent://print?text=${enc}#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};end`;
+    const opened = await tryOpenAppUris([uri1, uri2, intent]);
+    if (opened) return;
+    // se não abriu RawBT, cai para o fluxo com logo (seletor/share)
+  }
+  // “Perguntar toda vez” (ou fallback do RawBT) → mantém sua impressão com LOGO
+  await printWithLogo();
+}
+
+async function handlePrintClick(){
+  if (ensurePrintPref()){
+    await startPrintFlow();
+  }
+}
+
+/* Integra botão Imprimir COM a preferência */
+document.getElementById('btnPrint').addEventListener('click', handlePrintClick);
 
 /* =================== Inicial =================== */
 render();
