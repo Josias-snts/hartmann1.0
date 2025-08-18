@@ -2,222 +2,111 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Clientes — Irmãos Hartmann</title>
 <style>
   :root{
     --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
-    --border:#2c3448; --green:#10f7a0; --orange:#f59e0b; --blue:#0ea5e9; --red:#ef4444;
+    --border:#2c3448; --green:#10f7a0; --blue:#0ea5e9; --red:#ef4444;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif}
-  .wrap{max-width:760px;margin:0 auto;padding:20px}
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  .title{font-weight:800;font-size:18px}
-  .link-top{font-size:14px;color:#9bd3ff;text-decoration:none;padding:6px 10px;border-radius:10px;border:1px solid var(--border)}
-  .card{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 16px 40px rgba(0,0,0,.45)}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif}
+  .wrap{max-width:700px;margin:0 auto;padding:20px}
+  .title{font-size:20px;font-weight:800;margin-bottom:10px}
+  .card{background:var(--card);border-radius:14px;padding:20px}
   label{font-size:14px;color:var(--muted);margin-top:10px;display:block}
-  input,textarea{
+  input{
     width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);
-    background:#0b1220;color:var(--text);margin-top:5px;margin-bottom:10px;text-transform:uppercase;
+    background:#0b1220;color:var(--text);margin-top:5px;margin-bottom:10px;text-transform:uppercase
   }
-  textarea{min-height:80px;resize:vertical}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .btn{
-    display:flex;align-items:center;justify-content:center;height:52px;border-radius:14px;
-    font-weight:800;font-size:16px;border:0;cursor:pointer;user-select:none
-  }
+  .btn{height:44px;border-radius:10px;font-weight:700;cursor:pointer;border:0}
   .btn-green{background:var(--green);color:#001c14}
   .btn-blue{background:var(--blue);color:#001018}
-  .btn-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
   .btn-red{background:var(--red);color:#2b0a0a}
-  .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .search{margin:14px 0 8px}
-  .list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
-  .item{
-    border:1px solid var(--border);border-radius:12px;padding:12px;background:#0b1220;
-    display:flex;justify-content:space-between;gap:10px;align-items:flex-start
-  }
-  .item h4{margin:0 0 4px 0}
-  .muted{color:var(--muted);font-size:12px}
-  .small-btns{display:flex;gap:8px;flex-wrap:wrap}
-  .small-btn{height:36px;padding:0 12px;border-radius:10px;font-weight:800;border:0;cursor:pointer}
-  .small-green{background:var(--green);color:#001c14}
-  .small-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
-  .small-red{background:var(--red);color:#2b0a0a}
-  .empty{color:var(--muted);border:1px dashed var(--border);border-radius:12px;padding:16px;text-align:center}
+  .list{margin-top:20px;display:flex;flex-direction:column;gap:10px}
+  .item{background:#0b1220;border:1px solid var(--border);border-radius:10px;padding:12px;
+        display:flex;justify-content:space-between;align-items:center}
+  .muted{font-size:12px;color:var(--muted)}
+  .small-btns{display:flex;gap:6px}
+  .small-btn{padding:6px 12px;border-radius:8px;font-weight:700;cursor:pointer;border:0}
 </style>
 </head>
 <body>
 <div class="wrap">
-
-  <div class="topbar">
-    <div class="title">Clientes</div>
-    <a class="link-top" href="menu.html">Voltar ao menu</a>
-  </div>
-
+  <div class="title">Cadastro de Clientes</div>
   <div class="card">
-    <!-- Formulário -->
-    <label>Nome do Cliente *</label>
-    <input type="text" id="nome" placeholder="NOME COMPLETO">
+    <label>Nome *</label>
+    <input type="text" id="nome" placeholder="NOME DO CLIENTE">
 
-    <div class="row2">
-      <div>
-        <label>Placa</label>
-        <input type="text" id="placa" placeholder="ABC1D23">
-      </div>
-      <div>
-        <label>Pedra</label>
-        <input type="number" id="pedra" placeholder="07" inputmode="numeric" style="text-transform:none">
-      </div>
-    </div>
+    <label>Empresa</label>
+    <input type="text" id="empresa" placeholder="NOME DA EMPRESA">
 
-    <label>Observações</label>
-    <textarea id="obs" placeholder=""></textarea>
-
-    <div class="actions">
-      <button class="btn btn-outline" id="novo">Novo cliente</button>
+    <div style="display:flex;gap:10px;margin-top:10px">
       <button class="btn btn-green" id="salvar">Salvar</button>
+      <button class="btn btn-blue" id="novo">Novo</button>
     </div>
 
-    <!-- Busca -->
-    <div class="search">
-      <label>Buscar</label>
-      <input type="text" id="busca" placeholder="DIGITE PARA FILTRAR POR NOME" style="text-transform:none">
-    </div>
+    <label>Buscar</label>
+    <input type="text" id="busca" placeholder="FILTRAR POR NOME" style="text-transform:none">
 
-    <!-- Lista -->
     <div id="lista" class="list"></div>
   </div>
 </div>
 
 <script>
-/* ===== Util ===== */
-const $ = s => document.querySelector(s);
-const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const $ = s=>document.querySelector(s);
+const uid = ()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+let clientes=[]; let editId=null;
 
-/* ===== Estado ===== */
-let clientes = [];
-let editId = null;
+function load(){ try{clientes=JSON.parse(localStorage.getItem('clientes')||'[]')}catch{clientes=[]}; if(!Array.isArray(clientes)) clientes=[]; ordenar();}
+function save(){ localStorage.setItem('clientes',JSON.stringify(clientes)); }
+function ordenar(){ clientes.sort((a,b)=> (a.nome||'').localeCompare((b.nome||''),'pt-BR')); }
+function limpar(){ editId=null; $('#nome').value=''; $('#empresa').value=''; $('#nome').focus(); }
+function preencher(c){ editId=c.id; $('#nome').value=c.nome||''; $('#empresa').value=c.empresa||''; }
 
-/* ===== Persistência ===== */
-function load(){
-  try{ clientes = JSON.parse(localStorage.getItem('clientes')||'[]'); }
-  catch{ clientes = []; }
-  if (!Array.isArray(clientes)) clientes = [];
-  ordenar();
-}
-function save(){
-  localStorage.setItem('clientes', JSON.stringify(clientes));
-}
-
-/* ===== Helpers ===== */
-function ordenar(){
-  clientes.sort((a,b)=> (a.nome||'').localeCompare((b.nome||''), 'pt-BR'));
-}
-function limparForm(keepId=false){
-  if (!keepId) editId = null;
-  $('#nome').value = '';
-  $('#placa').value = '';
-  $('#pedra').value = '';
-  $('#obs').value = '';
-  $('#nome').focus();
-}
-function preencherForm(c){
-  editId = c.id;
-  $('#nome').value  = c.nome || '';
-  $('#placa').value = c.placa || '';
-  $('#pedra').value = c.pedra || '';
-  $('#obs').value   = c.obs   || '';
-}
-
-/* ===== Uppercase em campos de texto ===== */
-['nome','placa','obs'].forEach(id=>{
+['nome','empresa'].forEach(id=>{
   $('#'+id).addEventListener('input', e=>{
-    const pos = e.target.selectionStart;
-    e.target.value = e.target.value.toUpperCase();
+    const pos=e.target.selectionStart;
+    e.target.value=e.target.value.toUpperCase();
     e.target.setSelectionRange(pos,pos);
   });
 });
 
-/* ===== Renderização ===== */
 function render(){
-  const termo = ($('#busca').value||'').trim().toUpperCase();
-  const box = $('#lista');
-  box.innerHTML = '';
-
-  const data = termo
-    ? clientes.filter(c => (c.nome||'').includes(termo))
-    : clientes;
-
-  if (!data.length){
-    box.innerHTML = '<div class="empty">Nenhum cliente cadastrado.</div>';
-    return;
-  }
-
-  for (const c of data){
-    const div = document.createElement('div');
-    div.className = 'item';
-    div.innerHTML = `
+  const termo=($('#busca').value||'').trim().toUpperCase();
+  const box=$('#lista'); box.innerHTML='';
+  const data=termo?clientes.filter(c=>(c.nome||'').includes(termo)):clientes;
+  if(!data.length){box.innerHTML='<div class="muted">Nenhum cliente cadastrado.</div>';return;}
+  for(const c of data){
+    const div=document.createElement('div'); div.className='item';
+    div.innerHTML=`
       <div>
-        <h4>${(c.nome||'')}</h4>
-        <div class="muted">
-          ${c.placa ? `PLACA: ${c.placa} &nbsp;•&nbsp; ` : ''}
-          ${c.pedra ? `PEDRA: ${c.pedra}` : ''}
-          ${(!c.placa && !c.pedra) ? '—' : ''}
-        </div>
-        ${c.obs ? `<div class="muted" style="margin-top:4px">OBS: ${c.obs}</div>` : ''}
+        <div><b>${c.nome}</b></div>
+        <div class="muted">${c.empresa||'—'}</div>
       </div>
       <div class="small-btns">
-        <button class="small-btn small-green">Editar</button>
-        <button class="small-btn small-red">Excluir</button>
-      </div>
-    `;
-    const [btnEditar, btnExcluir] = div.querySelectorAll('button');
-
-    btnEditar.onclick = ()=>{
-      preencherForm(c);
-      window.scrollTo({top:0,behavior:'smooth'});
-    };
-    btnExcluir.onclick = ()=>{
-      if (!confirm('Excluir este cliente?')) return;
-      clientes = clientes.filter(x => x.id !== c.id);
-      save(); render();
-    };
-
+        <button class="small-btn btn-blue">Editar</button>
+        <button class="small-btn btn-red">Excluir</button>
+      </div>`;
+    const [btnEditar,btnExcluir]=div.querySelectorAll('button');
+    btnEditar.onclick=()=>{preencher(c); window.scrollTo({top:0,behavior:'smooth'});}
+    btnExcluir.onclick=()=>{ if(!confirm('Excluir este cliente?'))return;
+      clientes=clientes.filter(x=>x.id!==c.id); save(); render(); }
     box.appendChild(div);
   }
 }
 
-/* ===== Ações ===== */
-$('#novo').onclick = ()=> limparForm();
-$('#salvar').onclick = ()=>{
-  const nome = ($('#nome').value||'').trim().toUpperCase();
-  if (!nome){ alert('Informe o NOME do cliente.'); $('#nome').focus(); return; }
-
-  const registro = {
-    id: editId || uid(),
-    nome,
-    placa: ($('#placa').value||'').trim().toUpperCase(),
-    pedra: ($('#pedra').value||'').trim(),
-    obs:   ($('#obs').value||'').trim().toUpperCase(),
-    updatedAt: Date.now(),
-    createdAt: editId ? undefined : Date.now()
-  };
-
-  if (editId){
-    const idx = clientes.findIndex(c => c.id === editId);
-    if (idx >= 0) clientes[idx] = { ...clientes[idx], ...registro };
-  }else{
-    clientes.push(registro);
-  }
-  ordenar(); save(); render();
-  limparForm();
+$('#salvar').onclick=()=>{
+  const nome=($('#nome').value||'').trim().toUpperCase();
+  if(!nome){alert('Informe o NOME.'); return;}
+  const registro={id:editId||uid(),nome,empresa:($('#empresa').value||'').trim().toUpperCase()};
+  if(editId){ const i=clientes.findIndex(c=>c.id===editId); if(i>=0) clientes[i]={...clientes[i],...registro}; }
+  else{clientes.push(registro);}
+  ordenar(); save(); render(); limpar();
 };
+$('#novo').onclick=()=>limpar();
+$('#busca').addEventListener('input',render);
 
-$('#busca').addEventListener('input', render);
-
-/* ===== Init ===== */
 load(); render();
 </script>
 </body>
