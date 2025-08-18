@@ -26,12 +26,13 @@
   .btn-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
   .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 
-  /* Modal DETALHES */
+  /* Modal DETALHES (já existente) */
   .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
   .modal{background:var(--card);border-radius:16px;max-width:760px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.65)}
   .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .x{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:10px;height:36px;padding:0 10px;cursor:pointer}
 
+  /* Prévia (texto) */
   .preview-title{color:var(--muted);font-size:12px;margin-top:10px}
   .preview{
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -39,7 +40,7 @@
     margin: 6px 0 0; color: var(--text); background: transparent; padding: 0; border: 0;
   }
 
-  /* Modal EDIÇÃO */
+  /* Modal EDIÇÃO (novo) */
   .edit-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:30}
   .edit-modal{background:var(--card);border-radius:16px;max-width:820px;width:100%;max-height:92vh;overflow:auto;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.75)}
   label{font-size:14px;color:var(--muted);margin-top:10px;display:block}
@@ -59,6 +60,7 @@
 </head>
 <body>
 <div class="wrap">
+
   <div class="topbar">
     <a class="link-top" href="menu.html">Voltar ao menu</a>
   </div>
@@ -87,7 +89,7 @@
   </div>
 </div>
 
-<!-- Modal EDIÇÃO -->
+<!-- Modal EDIÇÃO (novo) -->
 <div id="editBackdrop" class="edit-backdrop">
   <div class="edit-modal">
     <div class="modal-head">
@@ -95,6 +97,7 @@
       <button class="x" id="fecharEdit">Fechar</button>
     </div>
 
+    <!-- Cabeçalho da OS -->
     <div class="row2">
       <div>
         <label>Cliente</label>
@@ -116,9 +119,11 @@
       </div>
     </div>
 
+    <!-- Itens -->
     <label>Itens</label>
     <div id="itensList" class="itens-list"></div>
 
+    <!-- Editor de item selecionado -->
     <div id="editorItem" style="margin-top:12px;display:none">
       <label>Produto</label>
       <input type="text" id="iProduto" />
@@ -153,7 +158,7 @@
 </div>
 
 <script>
-/* ===== Utils ===== */
+/* ========= Utils ========= */
 const $ = s => document.querySelector(s);
 const W = 42;
 const money = v => (isNaN(v)?0:v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -186,11 +191,12 @@ function maskMoneyInput(el){
   el.value = val.replace('.',',');
 }
 
-/* ===== Dados ===== */
-let data = [];
-let currentIndex = -1; // índice aberto no DETALHES
-let editIndex = -1;    // índice do item no modal EDIÇÃO
+/* ========= Dados ========= */
+let data = [];         // array de OS arquivadas
+let currentIndex = -1; // índice selecionado para modal Detalhes
+let editIndex = -1;    // índice do item sendo editado (modal Edição)
 
+/* Migração de chave antiga */
 (function migrateKeys(){
   const legacy = localStorage.getItem('osArquivadas');
   if (legacy && !localStorage.getItem('os_arquivadas')) {
@@ -198,6 +204,7 @@ let editIndex = -1;    // índice do item no modal EDIÇÃO
     localStorage.removeItem('osArquivadas');
   }
 })();
+
 function loadData(){
   try{ data = JSON.parse(localStorage.getItem('os_arquivadas')||'[]'); }
   catch{ data = []; }
@@ -206,7 +213,7 @@ function saveData(){
   localStorage.setItem('os_arquivadas', JSON.stringify(data));
 }
 
-/* ===== Lista ===== */
+/* ========= Render Lista ========= */
 function renderList(){
   const list = $('#lista');
   list.innerHTML = '';
@@ -238,13 +245,9 @@ function renderList(){
   });
 }
 
-/* ===== Texto 80mm ===== */
-/* Agora aceita preferRebuild=true para forçar reconstrução após edição */
-function buildOSFromRecord(rec, preferRebuild=false){
-  // Se preferRebuild for false e já existir texto salvo, usa-o.
-  if (!preferRebuild && rec && typeof rec.texto === 'string' && rec.texto.trim()) {
-    return rec.texto;
-  }
+/* ========= Montagem do texto 80mm ========= */
+function buildOSFromRecord(rec){
+  if (rec && typeof rec.texto === 'string' && rec.texto.trim()) return rec.texto;
 
   const d = rec.createdAt ? new Date(rec.createdAt) : new Date();
   const dataStr = `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
@@ -281,6 +284,7 @@ function buildOSFromRecord(rec, preferRebuild=false){
     soma += subtotal;
 
     wrapLines(nome, W).forEach(l => out.push(padRight(l, W)));
+
     const esquerda = `QTD: ${String(qtd).replace('.',',')} ${tipo} R$ ${money(unit)}`;
     const direita  = `TOTAL: R$ ${money(subtotal)}`;
     const espacos  = W - esquerda.length - direita.length;
@@ -295,19 +299,16 @@ function buildOSFromRecord(rec, preferRebuild=false){
   out.push('');
   out.push('Assinatura: __________________________');
 
-  // Se não tiver itens e tiver texto antigo, retorna o antigo
-  const built = out.join('\n');
-  if (!itens.length && rec.texto && !preferRebuild) return rec.texto;
-  return built;
+  return out.join('\n');
 }
 function recordToPrintable(rec){
-  const txt = (rec && typeof rec.texto === 'string' && rec.texto.trim())
+  const txt = rec && typeof rec.texto === 'string' && rec.texto.trim()
     ? rec.texto
-    : buildOSFromRecord(rec, true);
+    : buildOSFromRecord(rec);
   return String(txt).replace(/\\n/g, '\n');
 }
 
-/* ===== Modal DETALHES ===== */
+/* ========= Modal DETALHES ========= */
 function openModal(i){
   currentIndex = i;
   $('#preview').textContent = recordToPrintable(data[i]);
@@ -315,7 +316,7 @@ function openModal(i){
 }
 $('#fechar').onclick = () => { $('#backdrop').style.display = 'none'; };
 
-/* ===== Impressão COM LOGO ===== */
+/* ========= Impressão COM LOGO ========= */
 function loadImage(src){
   return new Promise((resolve, reject)=>{
     const img = new Image();
@@ -360,15 +361,10 @@ async function printWithLogo(texto){
   catch{ alert('Selecione e copie manualmente o texto da prévia.'); }
 }
 
-/* ===== Ações do DETALHES ===== */
+/* ========= Ações do modal DETALHES ========= */
 $('#btnReprint').onclick = async ()=>{
   if (currentIndex<0) return;
-  // garante usar o texto reconstruído mais recente
-  const rec = data[currentIndex];
-  rec.texto = buildOSFromRecord(rec, true);
-  saveData();
-  $('#preview').textContent = recordToPrintable(rec);
-  await printWithLogo(recordToPrintable(rec));
+  await printWithLogo(recordToPrintable(data[currentIndex]));
 };
 $('#btnDuplicate').onclick = ()=>{
   if (currentIndex<0) return;
@@ -377,7 +373,7 @@ $('#btnDuplicate').onclick = ()=>{
 };
 $('#btnEdit').onclick = ()=>{
   if (currentIndex<0) return;
-  openEditModal(currentIndex);
+  openEditModal(currentIndex); // agora abre o modal de edição AQUI
 };
 $('#btnDelete').onclick = ()=>{
   if (currentIndex<0) return;
@@ -388,7 +384,7 @@ $('#btnDelete').onclick = ()=>{
   renderList();
 };
 
-/* ===== Modal EDIÇÃO ===== */
+/* ========= Modal EDIÇÃO ========= */
 function fillEditForm(rec){
   $('#eCliente').value = rec.cliente || '';
   $('#ePlaca').value   = rec.placa   || '';
@@ -438,13 +434,9 @@ function renderItensList(rec){
     bRem.textContent = 'Remover';
     bRem.onclick = ()=>{
       rec.itens.splice(i,1);
-      // ao remover item, já reconstrói texto, salva e atualiza tudo
-      rec.texto = buildOSFromRecord(rec, true);
-      saveData();
       renderItensList(rec);
-      renderList();
-      // se modal de detalhes estiver aberto, atualiza a prévia
-      $('#preview').textContent = recordToPrintable(rec);
+      // atualiza prévia se modal DETALHES estiver aberto
+      if (currentIndex>=0) $('#preview').textContent = recordToPrintable(data[currentIndex]);
     };
 
     btns.appendChild(bEdit);
@@ -461,15 +453,13 @@ function openEditModal(i){
   fillEditForm(rec);
   renderItensList(rec);
   $('#editorItem').style.display='none';
-  $('#backdrop').style.display='none';
-  $('#editBackdrop').style.display='flex';
+  $('#backdrop').style.display='none'; // fecha detalhes
+  $('#editBackdrop').style.display='flex'; // abre edição
 }
 $('#fecharEdit').onclick = ()=>{ $('#editBackdrop').style.display='none'; };
 
-/* máscara de dinheiro no editor de item */
+/* salvar item (linha) */
 $('#iUnit').addEventListener('input', e => maskMoneyInput(e.target));
-
-/* salvar item */
 $('#btnSalvarItem').onclick = ()=>{
   if (currentIndex<0 || editIndex<0) return;
   const rec = data[currentIndex];
@@ -482,21 +472,12 @@ $('#btnSalvarItem').onclick = ()=>{
   };
   editIndex = -1;
   $('#editorItem').style.display='none';
-
-  // **FORÇA RECONSTRUIR TEXTO APÓS EDIÇÃO**
-  rec.texto = buildOSFromRecord(rec, true);
-  saveData();
-
   renderItensList(rec);
-  renderList();
-
-  // Reabre/atualiza Detalhes com a versão nova
+  saveData();
+  // atualiza prévia do modal detalhes (se for reaberto)
   $('#preview').textContent = recordToPrintable(rec);
-  $('#backdrop').style.display = 'flex';
-  $('#editBackdrop').style.display='none';
+  renderList();
 };
-
-/* cancelar item */
 $('#btnCancelarItem').onclick = ()=>{
   editIndex = -1;
   $('#editorItem').style.display='none';
@@ -511,25 +492,19 @@ $('#btnSalvarOS').onclick = ()=>{
   rec.pedra   = ($('#ePedra').value||'').toString().toUpperCase();
   rec.obs     = ($('#eObs').value||'').toUpperCase();
 
-  // **FORÇA RECONSTRUIR TEXTO APÓS EDIÇÃO**
-  rec.texto = buildOSFromRecord(rec, true);
-  saveData();
+  // Regenera texto formatado se a OS armazenava 'texto'
+  rec.texto = buildOSFromRecord(rec);
 
-  renderList();
+  saveData();
   $('#preview').textContent = recordToPrintable(rec);
-  $('#backdrop').style.display = 'flex';
+  renderList();
+  alert('OS atualizada!');
   $('#editBackdrop').style.display='none';
 };
 
-/* ===== Modal DETALHES: ações ===== */
-$('#btnReprint').onclick = async ()=>{
-  if (currentIndex<0) return;
-  const rec = data[currentIndex];
-  rec.texto = buildOSFromRecord(rec, true);
-  saveData();
-  $('#preview').textContent = recordToPrintable(rec);
-  await printWithLogo(recordToPrintable(rec));
-};
-$('#btnDuplicate').onclick = ()=>{
-  if (currentIndex<0) return;
-  localStorage.setItem('du
+/* ========= Init ========= */
+loadData();
+renderList();
+</script>
+</body>
+</html>
