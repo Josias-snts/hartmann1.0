@@ -239,8 +239,12 @@ function renderList(){
 }
 
 /* ===== Texto 80mm ===== */
-function buildOSFromRecord(rec){
-  if (rec && typeof rec.texto === 'string' && rec.texto.trim()) return rec.texto;
+/* Agora aceita preferRebuild=true para forçar reconstrução após edição */
+function buildOSFromRecord(rec, preferRebuild=false){
+  // Se preferRebuild for false e já existir texto salvo, usa-o.
+  if (!preferRebuild && rec && typeof rec.texto === 'string' && rec.texto.trim()) {
+    return rec.texto;
+  }
 
   const d = rec.createdAt ? new Date(rec.createdAt) : new Date();
   const dataStr = `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
@@ -291,12 +295,15 @@ function buildOSFromRecord(rec){
   out.push('');
   out.push('Assinatura: __________________________');
 
-  return out.join('\n');
+  // Se não tiver itens e tiver texto antigo, retorna o antigo
+  const built = out.join('\n');
+  if (!itens.length && rec.texto && !preferRebuild) return rec.texto;
+  return built;
 }
 function recordToPrintable(rec){
-  const txt = rec && typeof rec.texto === 'string' && rec.texto.trim()
+  const txt = (rec && typeof rec.texto === 'string' && rec.texto.trim())
     ? rec.texto
-    : buildOSFromRecord(rec);
+    : buildOSFromRecord(rec, true);
   return String(txt).replace(/\\n/g, '\n');
 }
 
@@ -356,7 +363,12 @@ async function printWithLogo(texto){
 /* ===== Ações do DETALHES ===== */
 $('#btnReprint').onclick = async ()=>{
   if (currentIndex<0) return;
-  await printWithLogo(recordToPrintable(data[currentIndex]));
+  // garante usar o texto reconstruído mais recente
+  const rec = data[currentIndex];
+  rec.texto = buildOSFromRecord(rec, true);
+  saveData();
+  $('#preview').textContent = recordToPrintable(rec);
+  await printWithLogo(recordToPrintable(rec));
 };
 $('#btnDuplicate').onclick = ()=>{
   if (currentIndex<0) return;
@@ -426,10 +438,13 @@ function renderItensList(rec){
     bRem.textContent = 'Remover';
     bRem.onclick = ()=>{
       rec.itens.splice(i,1);
-      renderItensList(rec);
+      // ao remover item, já reconstrói texto, salva e atualiza tudo
+      rec.texto = buildOSFromRecord(rec, true);
       saveData();
-      // atualiza lista e, se detalhes for reaberto, já está atualizado
+      renderItensList(rec);
       renderList();
+      // se modal de detalhes estiver aberto, atualiza a prévia
+      $('#preview').textContent = recordToPrintable(rec);
     };
 
     btns.appendChild(bEdit);
@@ -451,19 +466,6 @@ function openEditModal(i){
 }
 $('#fecharEdit').onclick = ()=>{ $('#editBackdrop').style.display='none'; };
 
-/* Helper: reabre Detalhes com prévia atualizada */
-function reopenDetailsWithPreview(){
-  if (currentIndex<0) return;
-  // Regenera texto em rec (garante que texto acompanha edição)
-  const rec = data[currentIndex];
-  rec.texto = buildOSFromRecord(rec);
-  saveData();
-  renderList();
-  // abre modal detalhes com a prévia atualizada
-  $('#preview').textContent = recordToPrintable(rec);
-  $('#backdrop').style.display = 'flex';
-}
-
 /* máscara de dinheiro no editor de item */
 $('#iUnit').addEventListener('input', e => maskMoneyInput(e.target));
 
@@ -480,10 +482,17 @@ $('#btnSalvarItem').onclick = ()=>{
   };
   editIndex = -1;
   $('#editorItem').style.display='none';
+
+  // **FORÇA RECONSTRUIR TEXTO APÓS EDIÇÃO**
+  rec.texto = buildOSFromRecord(rec, true);
+  saveData();
+
   renderItensList(rec);
-  // salva e reabre detalhes com prévia atualizada
-  reopenDetailsWithPreview();
-  // fecha modal de edição
+  renderList();
+
+  // Reabre/atualiza Detalhes com a versão nova
+  $('#preview').textContent = recordToPrintable(rec);
+  $('#backdrop').style.display = 'flex';
   $('#editBackdrop').style.display='none';
 };
 
@@ -502,14 +511,25 @@ $('#btnSalvarOS').onclick = ()=>{
   rec.pedra   = ($('#ePedra').value||'').toString().toUpperCase();
   rec.obs     = ($('#eObs').value||'').toUpperCase();
 
-  // salva e reabre detalhes com prévia atualizada
-  reopenDetailsWithPreview();
+  // **FORÇA RECONSTRUIR TEXTO APÓS EDIÇÃO**
+  rec.texto = buildOSFromRecord(rec, true);
+  saveData();
+
+  renderList();
+  $('#preview').textContent = recordToPrintable(rec);
+  $('#backdrop').style.display = 'flex';
   $('#editBackdrop').style.display='none';
 };
 
-/* ===== Init ===== */
-loadData();
-renderList();
-</script>
-</body>
-</html>
+/* ===== Modal DETALHES: ações ===== */
+$('#btnReprint').onclick = async ()=>{
+  if (currentIndex<0) return;
+  const rec = data[currentIndex];
+  rec.texto = buildOSFromRecord(rec, true);
+  saveData();
+  $('#preview').textContent = recordToPrintable(rec);
+  await printWithLogo(recordToPrintable(rec));
+};
+$('#btnDuplicate').onclick = ()=>{
+  if (currentIndex<0) return;
+  localStorage.setItem('du
