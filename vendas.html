@@ -84,7 +84,7 @@
 
     <!-- Produto -->
     <label>Produto</label>
-    <input type="text" id="produto" placeholder="BANANA" list="produtosList" autocomplete="off">
+    <input type="text" id="produto" placeholder="MELANCIA" list="produtosList" autocomplete="off">
     <datalist id="produtosList"></datalist>
 
     <div class="row2">
@@ -331,14 +331,14 @@ function buildOS(){
   });
 
   out.push('-'.repeat(W));
-  const totalNota = `TOTAL DA NOTA: R$ ${money(soma)}`;
+  const totalNota = `VALOR TOTAL: R$ ${money(soma)}`;
   out.push(' '.repeat(Math.max(0, W - totalNota.length)) + totalNota);
   out.push('');
   out.push('Assinatura: __________________________');
   // <<< NOVO: duas linhas em branco + "MUITO OBRIGADO" centralizado >>>
   out.push('');
   out.push('');
-  out.push(center('MUITO OBRIGADO', W));
+  out.push(center('OBRIGADO PELA PREFERENCIA', W));
 
   return out.join('\n');
 }
@@ -471,3 +471,4 @@ render();
 </script>
 </body>
 </html>
+
