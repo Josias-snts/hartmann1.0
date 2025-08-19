@@ -100,7 +100,8 @@
     <div class="row2">
       <div>
         <label>Cliente</label>
-        <input type="text" id="eCliente" />
+        <input type="text" id="eCliente" list="clientesList" autocomplete="off" />
+        <datalist id="clientesList"></datalist>
       </div>
       <div>
         <label>Placa</label>
@@ -150,6 +151,8 @@
 
     <div class="row" style="margin-top:10px">
       <button class="btn btn-green" id="btnSalvarOS">Salvar alterações da OS</button>
+      <!-- >>> NOVO botão para acrescentar itens durante a edição <<< -->
+      <button class="btn btn-blue" id="btnAddNewItem">Adicionar item</button>
     </div>
   </div>
 </div>
@@ -242,6 +245,33 @@ function renderList(){
   });
 }
 
+/* ========= CLIENTES (autocomplete do clientes.html) ========= */
+function lerClientesDoStorage(){
+  let arr;
+  try { arr = JSON.parse(localStorage.getItem('clientes') || '[]'); } catch { arr = []; }
+  const nomes = [];
+  for (const c of (arr||[])) {
+    if (typeof c === 'string') nomes.push(c);
+    else if (c && typeof c === 'object' && ('nome' in c)) nomes.push(c.nome);
+  }
+  return [...new Set(nomes.map(x => String(x||'').toUpperCase().trim()).filter(Boolean))]
+         .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function preencherDatalistClientes(){
+  const dl = document.getElementById('clientesList');
+  if (!dl) return;
+  dl.innerHTML = '';
+  for (const nome of lerClientesDoStorage()){
+    const opt = document.createElement('option');
+    opt.value = nome;
+    dl.appendChild(opt);
+  }
+}
+document.addEventListener('DOMContentLoaded', preencherDatalistClientes);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) preencherDatalistClientes(); });
+window.addEventListener('storage', e=>{ if(e.key==='clientes') preencherDatalistClientes(); });
+document.getElementById('eCliente')?.addEventListener('focus', preencherDatalistClientes);
+
 /* ========= Montagem do texto 80mm ========= */
 function buildOSFromRecord(rec){
   const d = rec.createdAt ? new Date(rec.createdAt) : new Date();
@@ -274,7 +304,7 @@ function buildOSFromRecord(rec){
     const qtd  = parseFloat(it.qtd)||0;
     const unit = parseFloat(it.unit)||0;
     const tipo = (it.tipo||'').toUpperCase();
-    const nome = String(it.produto||'').toUpperCase();
+    const nome = String(it.produto||it.nome||'').toUpperCase();
     const subtotal = qtd*unit;
     soma += subtotal;
 
@@ -293,6 +323,9 @@ function buildOSFromRecord(rec){
   out.push(' '.repeat(Math.max(0, W - totalNota.length)) + totalNota);
   out.push('');
   out.push('Assinatura: __________________________');
+  out.push('');
+  out.push('');
+  out.push(center('MUITO OBRIGADO PELA PREFERENCIA', W));
 
   return out.join('\n');
 }
@@ -307,7 +340,6 @@ function recordToPrintable(rec){
 function openModal(i){
   currentIndex = i;
   const rec = data[i];
-  // >>> Garante que a prévia use a versão mais recente
   rec.texto = buildOSFromRecord(rec);
   saveData();
   $('#preview').textContent = recordToPrintable(rec);
@@ -364,7 +396,6 @@ async function printWithLogo(texto){
 $('#btnReprint').onclick = async ()=>{
   if (currentIndex<0) return;
   const rec = data[currentIndex];
-  // >>> Garante que a impressão use a versão mais recente
   rec.texto = buildOSFromRecord(rec);
   saveData();
   $('#preview').textContent = recordToPrintable(rec);
@@ -414,8 +445,10 @@ function renderItensList(rec){
 
     const titulo = document.createElement('div');
     const subtotal = (parseFloat(it.qtd)||0) * (parseFloat(it.unit)||0);
-    titulo.innerHTML = `<b>${(it.produto||'').toUpperCase()}</b><br>
-      <span class="muted">QTD: ${String(it.qtd).replace('.',',')} ${(it.tipo||'').toUpperCase()} — V.UNIT: R$ ${money(it.unit)} — TOTAL: R$ ${money(subtotal)}</span>`;
+    const nome = (it.produto || it.nome || '').toUpperCase();
+    const tipo = (it.tipo||'').toUpperCase();
+    titulo.innerHTML = `<b>${nome}</b><br>
+      <span class="muted">QTD: ${String(it.qtd).replace('.',',')} ${tipo} — V.UNIT: R$ ${money(it.unit)} — TOTAL: R$ ${money(subtotal)}</span>`;
 
     const btns = document.createElement('div');
     btns.className = 'small-btns';
@@ -426,7 +459,7 @@ function renderItensList(rec){
     bEdit.onclick = ()=>{
       editIndex = i;
       $('#editorItem').style.display='block';
-      $('#iProduto').value = (it.produto||'').toUpperCase();
+      $('#iProduto').value = nome;
       $('#iTipo').value    = (it.tipo||'CX').toUpperCase();
       $('#iQtd').value     = it.qtd || 0;
       $('#iUnit').value    = (parseFloat(it.unit)||0).toFixed(2).replace('.',',');
@@ -438,7 +471,6 @@ function renderItensList(rec){
     bRem.textContent = 'Remover';
     bRem.onclick = ()=>{
       rec.itens.splice(i,1);
-      // >>> Atualiza texto e salva ao remover
       rec.texto = buildOSFromRecord(rec);
       saveData();
       renderItensList(rec);
@@ -482,13 +514,11 @@ $('#btnSalvarItem').onclick = ()=>{
   editIndex = -1;
   $('#editorItem').style.display='none';
 
-  // >>> Regera texto, salva, atualiza lista e prévia
   rec.texto = buildOSFromRecord(rec);
   saveData();
   renderItensList(rec);
   renderList();
   $('#preview').textContent = recordToPrintable(rec);
-  // volta para detalhes
   $('#backdrop').style.display = 'flex';
   $('#editBackdrop').style.display='none';
 };
@@ -508,7 +538,6 @@ $('#btnSalvarOS').onclick = ()=>{
   rec.pedra   = ($('#ePedra').value||'').toString().toUpperCase();
   rec.obs     = ($('#eObs').value||'').toUpperCase();
 
-  // >>> Regera texto e salva
   rec.texto = buildOSFromRecord(rec);
   saveData();
   renderList();
@@ -517,7 +546,24 @@ $('#btnSalvarOS').onclick = ()=>{
   $('#editBackdrop').style.display='none';
 };
 
-/* ========= Init ========= */
+/* >>> NOVO: botão “Adicionar item” ao lado de Salvar Alterações <<< */
+$('#btnAddNewItem').onclick = ()=>{
+  if (currentIndex<0) return;
+  const rec = data[currentIndex];
+  if (!Array.isArray(rec.itens)) rec.itens = [];
+  // cria item em branco e abre editor
+  rec.itens.push({ produto:'', tipo:'CX', qtd:0, unit:0 });
+  editIndex = rec.itens.length - 1;
+  renderItensList(rec);
+  $('#editorItem').style.display='block';
+  // limpa campos do editor e foca
+  $('#iProduto').value = '';
+  $('#iTipo').value = 'CX';
+  $('#iQtd').value = '';
+  $('#iUnit').value = '';
+  $('#iProduto').focus();
+};
+
 loadData();
 renderList();
 </script>
