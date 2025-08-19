@@ -335,7 +335,7 @@ function buildOS(){
   out.push(' '.repeat(Math.max(0, W - totalNota.length)) + totalNota);
   out.push('');
   out.push('Assinatura: __________________________');
-  // <<< NOVO: duas linhas em branco + "MUITO OBRIGADO" centralizado >>>
+  // duas linhas em branco + mensagem
   out.push('');
   out.push('');
   out.push(center('OBRIGADO PELA PREFERENCIA', W));
@@ -435,35 +435,27 @@ function abrirModalItens(){
 $('#btnEdit').addEventListener('click', abrirModalItens);
 $('#fecharModal').addEventListener('click', ()=> $('#backdrop').style.display='none');
 
-/* =================== IMPRIMIR: integra Thermer =================== */
+/* =================== IMPRIMIR: abre popup de escolha =================== */
+async function shareText(text){
+  if (navigator.share){
+    try {
+      await navigator.share({ text, title:'OS Hartmann' }); // abre seletor de app (Thermer/RawBT/etc.)
+      return;
+    } catch(e){ /* usuário cancelou */ }
+  }
+  // Fallback: copia texto
+  try {
+    await navigator.clipboard.writeText(text);
+    alert('OS copiada! Abra o app da impressora e cole.');
+  } catch {
+    alert('Selecione e copie manualmente a prévia.');
+  }
+}
+
 document.getElementById('btnPrint').onclick = async () => {
   garantirItemAtual();
   const osText = buildOS();
-
-  try { await navigator.clipboard.writeText(osText); } catch (e) {}
-
-  const intentUrl   = "intent://print#Intent;scheme=mate.bluetoothprint;package=mate.bluetoothprint;end;";
-  const fallbackUrl = "android-app://mate.bluetoothprint";
-  let opened = false;
-
-  try { window.location.href = intentUrl; opened = true; } catch(e) {}
-  setTimeout(() => {
-    if (!opened) {
-      try { window.location.href = fallbackUrl; opened = true; } catch(e) {}
-    }
-  }, 300);
-
-  setTimeout(async () => {
-    if (!opened) {
-      if (navigator.share) {
-        try { await navigator.share({ text: osText, title: 'OS Hartmann' }); }
-        catch (e) {}
-      } else {
-        try { await navigator.clipboard.writeText(osText); alert('OS copiada! Abra o app da impressora e cole.'); }
-        catch (e) { alert('Selecione e copie manualmente da prévia.'); }
-      }
-    }
-  }, 1200);
+  await shareText(osText);
 };
 
 /* =================== Inicial =================== */
@@ -471,4 +463,3 @@ render();
 </script>
 </body>
 </html>
-
