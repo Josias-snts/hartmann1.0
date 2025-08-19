@@ -345,6 +345,73 @@ function buildOS(){
 
 function render(){ $('#preview').textContent = buildOS(); }
 
+/* =================== Impressão com LOGO (arquivo) + fallback texto =================== */
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function shareImageWithLogo(texto){
+  // Gera imagem com logo + texto centralizado
+  const img = await loadImage('img/logo-hartmann.png'); // precisa existir
+  const Wpx = 576;                   // típico para 80mm
+  const fontSize = 20;
+  const lineH = 26;
+  const topPad = 20, between = 16;
+
+  const lines = String(texto).split('\n');
+
+  const scale = Math.min((Wpx*0.8)/img.width, 1);
+  const logoW = Math.round(img.width * scale);
+  const logoH = Math.round(img.height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = Wpx;
+  canvas.height = topPad + logoH + between + lines.length*lineH + 20;
+
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Logo centralizada
+  const logoX = Math.round((Wpx - logoW)/2);
+  ctx.drawImage(img, logoX, topPad, logoW, logoH);
+
+  // Texto centralizado por linha
+  ctx.fillStyle = '#000000';
+  ctx.font = `${fontSize}px Consolas, Menlo, monospace`;
+  let y = topPad + logoH + between + fontSize;
+  for (const line of lines){
+    const m = ctx.measureText(line);
+    const x = Math.max(0, Math.round((Wpx - m.width)/2));
+    ctx.fillText(line, x, y);
+    y += lineH;
+  }
+
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+  const file = new File([blob], 'os-hartmann.png', { type:'image/png' });
+
+  // Tenta compartilhar como arquivo (abre seletor de apps)
+  if (navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
+    await navigator.share({ files:[file], title:'OS Hartmann' });
+    return true; // sucesso
+  }
+  return false; // não conseguiu compartilhar arquivo
+}
+
+async function shareText(text){
+  if (navigator.share){
+    try { await navigator.share({ text, title:'OS Hartmann' }); return; }
+    catch(e){ /* cancelado */ }
+  }
+  try { await navigator.clipboard.writeText(text); alert('OS copiada! Abra o app da impressora e cole.'); }
+  catch { alert('Selecione e copie manualmente a prévia.'); }
+}
+
 /* =================== Ações principais =================== */
 $('#btnAdd').addEventListener('click', ()=>{
   if(!addAtualSePreenchido()) alert('Preencha PRODUTO e QTD para adicionar.');
@@ -367,7 +434,7 @@ $('#btnArchive').addEventListener('click', ()=>{
   alert('OS arquivada!');
 });
 
-/* ----- LIMPAR TUDO (mantido) ----- */
+/* ----- LIMPAR TUDO ----- */
 $('#btnClear').addEventListener('click', ()=>{
   if(!confirm('Limpar tudo e iniciar uma nova venda?')) return;
   itens = [];
@@ -435,27 +502,16 @@ function abrirModalItens(){
 $('#btnEdit').addEventListener('click', abrirModalItens);
 $('#fecharModal').addEventListener('click', ()=> $('#backdrop').style.display='none');
 
-/* =================== IMPRIMIR: abre popup de escolha =================== */
-async function shareText(text){
-  if (navigator.share){
-    try {
-      await navigator.share({ text, title:'OS Hartmann' }); // abre seletor de app (Thermer/RawBT/etc.)
-      return;
-    } catch(e){ /* usuário cancelou */ }
-  }
-  // Fallback: copia texto
-  try {
-    await navigator.clipboard.writeText(text);
-    alert('OS copiada! Abra o app da impressora e cole.');
-  } catch {
-    alert('Selecione e copie manualmente a prévia.');
-  }
-}
-
+/* =================== IMPRIMIR: LOGO (arquivo) -> fallback TEXTO =================== */
 document.getElementById('btnPrint').onclick = async () => {
   garantirItemAtual();
   const osText = buildOS();
-  await shareText(osText);
+  try{
+    const ok = await shareImageWithLogo(osText); // tenta com LOGO (arquivo + seletor de app)
+    if (!ok) await shareText(osText);            // fallback para texto (ainda abre seletor)
+  }catch{
+    await shareText(osText);
+  }
 };
 
 /* =================== Inicial =================== */
