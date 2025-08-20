@@ -269,7 +269,7 @@ function buildOS(){
   const obs     = ($('#obs').value||'').trim().toUpperCase();
 
   const out = [];
-  out.push(center('IRMAOS HARTMANN', W));
+  out.push(center('IRMAOS HARTMANN', W));       // centralizado
   out.push(center('ORDEM DE SERVICO', W));
   out.push('='.repeat(W));
   out.push(padRight(`DATA: ${data}`, W));
@@ -308,7 +308,8 @@ function buildOS(){
   out.push('');
   out.push('Assinatura: __________________________');
   out.push('');
-  out.push(center('OBRIGADO PELA PREFERENCIA!', W));
+  out.push('');
+  out.push(center('MUITO OBRIGADO!', W));
 
   return out.join('\n');
 }
@@ -332,10 +333,9 @@ function loadImageAny(paths){
   });
 }
 
-/* Impressão com LOGO + destaques (cabeçalho maior, itens e total em negrito) */
+/* Impressão com LOGO + destaques (marca centralizada maior+bold, itens e total em negrito) */
 async function printWithLogoBold(texto){
   try{
-    // tente variações de caminho (raiz, relativo, com ./)
     const img = await loadImageAny(['img/logo-hartmann.png','./img/logo-hartmann.png','/img/logo-hartmann.png']);
 
     const Wpx = 576;        // Largura 80mm
@@ -377,7 +377,7 @@ async function printWithLogoBold(texto){
       y += lineH;
     }
 
-    // Destaques: 1ª linha (marca) maior+bold; linhas de produto (heurística) bold; TOTAL DA NOTA bold
+    // Regras de destaque
     const prefixosNaoProduto = /^(DATA:|CLIENTE:|PLACA:|PEDRA:|PRODUTO:|OBS:|=|-|Assinatura:|OBRIGADO PELA PREFERENCIA!)/i;
     lines.forEach((line, idx)=>{
       const isHeaderBrand = (idx === 0);                // 1ª linha: IRMÃOS HARTMANN
@@ -397,7 +397,7 @@ async function printWithLogoBold(texto){
       return;
     }
   }catch(e){
-    // segue para fallback de texto
+    // fallback de texto
   }
 
   // Fallback: compartilhamento/cópia de texto (abre seletor de apps)
