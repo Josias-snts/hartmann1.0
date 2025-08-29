@@ -1,20 +1,23 @@
 {
   "name": "Irmãos Hartmann",
   "short_name": "Hartmann",
-  "start_url": "vendas.html",
+  "start_url": "menu.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "img/icon-192.png",
+      "src": "img/logo-hartmann.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "img/icon-512.png",
+      "src": "img/logo-hartmann.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
