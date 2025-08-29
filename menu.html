@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Menu — Irmãos Hartmann</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="img/logo-hartmann.png" type="image/png">
+<link rel="apple-touch-icon" href="img/logo-hartmann.png" />
+
 <style>
   :root{
     --bg:#0f172a;         
@@ -79,7 +86,6 @@
     box-shadow:inset 0 -2px rgba(0,0,0,.15);
     transition:0.2s ease-in-out;
   }
-
   .btn:hover{ transform:scale(1.04); }
 
   .btn-green{background:var(--green);color:#001c14}
@@ -117,11 +123,24 @@
         <!-- Clientes -->
         <a class="btn btn-purple" href="clientes.html">👥 Clientes</a>
 
-        <!-- Todas as Vendas (NOVO) -->
+        <!-- Todas as Vendas -->
         <a class="btn btn-outline" href="tvendas.html">🧾 Todas as Vendas</a>
       </div>
       <div class="footer">Mobile • by Josias Santos</div>
     </div>
   </div>
+
+<script>
+  // Registra o Service Worker para PWA/ícone na tela inicial
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+
+  // (Opcional) Logout simples se estiver usando login:
+  // document.getElementById("btnSair")?.addEventListener("click", () => {
+  //   localStorage.removeItem("usuarioLogado");
+  //   location.href = "index.html";
+  // });
+</script>
 </body>
 </html>
