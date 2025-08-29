@@ -80,21 +80,13 @@
     transition:0.2s ease-in-out;
   }
 
-  .btn:hover{
-    transform:scale(1.04);
-  }
+  .btn:hover{ transform:scale(1.04); }
 
   .btn-green{background:var(--green);color:#001c14}
   .btn-blue{background:var(--blue);color:#001018}
   .btn-orange{background:var(--orange);color:#2b1500}
   .btn-purple{background:var(--purple);color:#190029}
   .btn-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
-
-  /* Ícones */
-  .btn svg{
-    width:22px;
-    height:22px;
-  }
 
   .footer{
     color:var(--muted);
@@ -104,9 +96,7 @@
   }
 
   @media(max-width:500px){
-    .grid{
-      grid-template-columns:1fr;
-    }
+    .grid{ grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -115,25 +105,20 @@
     <img class="logo" src="img/logo-hartmann.png" alt="IRMÃOS HARTMANN">
     <div class="card">
       <div class="grid">
-        <!-- Botão Vender -->
-        <a class="btn btn-green" href="vendas.html">
-          🛒 Vender
-        </a>
+        <!-- Vender -->
+        <a class="btn btn-green" href="vendas.html">🛒 Vender</a>
 
-        <!-- Botão Produtos -->
-        <a class="btn btn-blue" href="produtos.html">
-          📦 Produtos
-        </a>
+        <!-- Produtos -->
+        <a class="btn btn-blue" href="produtos.html">📦 Produtos</a>
 
-        <!-- Botão OS Arquivadas -->
-        <a class="btn btn-orange" href="arquivados.html">
-          📂 OS Arquivadas
-        </a>
+        <!-- OS Arquivadas -->
+        <a class="btn btn-orange" href="arquivados.html">📂 OS Arquivadas</a>
 
-        <!-- Botão Clientes -->
-        <a class="btn btn-purple" href="clientes.html">
-          👥 Clientes
-        </a>
+        <!-- Clientes -->
+        <a class="btn btn-purple" href="clientes.html">👥 Clientes</a>
+
+        <!-- Todas as Vendas (NOVO) -->
+        <a class="btn btn-outline" href="tvendas.html">🧾 Todas as Vendas</a>
       </div>
       <div class="footer">Mobile • by Josias Santos</div>
     </div>
