@@ -101,6 +101,25 @@
     margin-top:16px;
   }
 
+  /* Botão instalar app (aparece só quando suportado) */
+  .install-wrap{
+    margin-top:10px;
+    display:none; /* será mostrado via JS quando houver beforeinstallprompt */
+  }
+  .install-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 14px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:#0ea5e9;
+    color:#001018;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .install-btn:active{ transform: translateY(1px); }
+
   @media(max-width:500px){
     .grid{ grid-template-columns:1fr; }
   }
@@ -126,6 +145,12 @@
         <!-- Todas as Vendas -->
         <a class="btn btn-outline" href="tvendas.html">🧾 Todas as Vendas</a>
       </div>
+
+      <!-- Botão instalar app (PWA) -->
+      <div id="installWrap" class="install-wrap">
+        <button id="installBtn" class="install-btn">📲 Instalar app</button>
+      </div>
+
       <div class="footer">Mobile • by Josias Santos</div>
     </div>
   </div>
@@ -136,11 +161,32 @@
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
 
-  // (Opcional) Logout simples se estiver usando login:
-  // document.getElementById("btnSair")?.addEventListener("click", () => {
-  //   localStorage.removeItem("usuarioLogado");
-  //   location.href = "index.html";
-  // });
+  // Lida com a instalação (beforeinstallprompt)
+  let deferredPrompt = null;
+  const installWrap = document.getElementById('installWrap');
+  const installBtn  = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Evita o banner automático e guarda o evento
+    e.preventDefault();
+    deferredPrompt = e;
+    installWrap.style.display = 'block'; // mostra o botão
+  });
+
+  installBtn?.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    // Se instalou ou cancelou, esconda o botão
+    installWrap.style.display = 'none';
+    deferredPrompt = null;
+  });
+
+  // Quando app for instalado, esconda o botão
+  window.addEventListener('appinstalled', () => {
+    installWrap.style.display = 'none';
+    deferredPrompt = null;
+  });
 </script>
 </body>
 </html>
