@@ -4,43 +4,110 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Menu — Irmãos Hartmann</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   :root{
-    --bg:#0f172a;
-    --card:#111827;
-    --text:#e5e7eb;
+    --bg:#0f172a;         
+    --card:#111827;       
+    --text:#e5e7eb;       
     --muted:#9ca3af;
     --border:#2c3448;
-    --green:#10f7a0;
-    --blue:#0ea5e9;
+    --green:#10f7a0;      
+    --blue:#0ea5e9;       
+    --orange:#f59e0b;     
+    --purple:#a855f7;     
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif}
-  .wrap{max-width:760px;margin:0 auto;padding:24px}
-  .logo{display:block;margin:18px auto 22px;max-width:420px;width:80%;height:auto;filter:drop-shadow(0 10px 30px rgba(0,0,0,.35))}
-  .card{background:var(--card);border-radius:18px;padding:24px;box-shadow:0 16px 40px rgba(0,0,0,.45)}
+
+  *{box-sizing:border-box; margin:0; padding:0}
+
+  html,body{
+    height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:system-ui,Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+
+  .wrap{
+    max-width:760px;
+    width:100%;
+    padding:20px;
+  }
+
+  .logo{
+    display:block;
+    margin:0 auto 24px;
+    max-width:360px;
+    width:80%;
+    height:auto;
+    filter:drop-shadow(0 10px 30px rgba(0,0,0,.35));
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:18px;
+    padding:24px;
+    box-shadow:0 16px 40px rgba(0,0,0,.45);
+    text-align:center;
+  }
+
+  /* GRID COM 2 BOTÕES POR LINHA */
   .grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:repeat(2,1fr);
     gap:16px;
     max-width:600px;
-    margin:0 auto
+    margin:0 auto;
   }
+
   .btn{
-    display:flex;align-items:center;justify-content:center;text-align:center;gap:10px;
-    width:100%; height:64px;
-    border-radius:14px;font-weight:800;font-size:18px;letter-spacing:.3px;
-    border:0;text-decoration:none;cursor:pointer; user-select:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    height:64px;
+    border-radius:14px;
+    font-weight:800;
+    font-size:18px;
+    letter-spacing:.3px;
+    border:0;
+    text-decoration:none;
+    cursor:pointer;
+    user-select:none;
     box-shadow:inset 0 -2px rgba(0,0,0,.15);
+    transition:0.2s ease-in-out;
   }
-  .btn i{font-size:20px;}
-  .btn:active{transform:translateY(1px)}
+
+  .btn:hover{
+    transform:scale(1.04);
+  }
+
   .btn-green{background:var(--green);color:#001c14}
   .btn-blue{background:var(--blue);color:#001018}
+  .btn-orange{background:var(--orange);color:#2b1500}
+  .btn-purple{background:var(--purple);color:#190029}
   .btn-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
-  .footer{color:var(--muted);font-size:12px;text-align:center;margin-top:14px}
-  @media (max-width:500px){ .grid{grid-template-columns:1fr;} } /* No celular volta a 1 coluna */
+
+  /* Ícones */
+  .btn svg{
+    width:22px;
+    height:22px;
+  }
+
+  .footer{
+    color:var(--muted);
+    font-size:12px;
+    text-align:center;
+    margin-top:16px;
+  }
+
+  @media(max-width:500px){
+    .grid{
+      grid-template-columns:1fr;
+    }
+  }
 </style>
 </head>
 <body>
@@ -48,26 +115,28 @@
     <img class="logo" src="img/logo-hartmann.png" alt="IRMÃOS HARTMANN">
     <div class="card">
       <div class="grid">
-        <a class="btn btn-green" href="vendas.html"><i class="fas fa-cash-register"></i> Vender</a>
-        <a class="btn btn-blue" href="produtos.html"><i class="fas fa-boxes-stacked"></i> Produtos</a>
-        <a class="btn btn-outline" href="arquivados.html"><i class="fas fa-archive"></i> OS Arquivadas</a>
-        <a class="btn btn-outline" href="clientes.html"><i class="fas fa-users"></i> Clientes</a>
-        <a class="btn btn-outline" href="tvendas.html"><i class="fas fa-list"></i> Todas as Vendas</a>
-        <button id="btnSair" class="btn btn-outline"><i class="fas fa-sign-out-alt"></i> Sair</button>
+        <!-- Botão Vender -->
+        <a class="btn btn-green" href="vendas.html">
+          🛒 Vender
+        </a>
+
+        <!-- Botão Produtos -->
+        <a class="btn btn-blue" href="produtos.html">
+          📦 Produtos
+        </a>
+
+        <!-- Botão OS Arquivadas -->
+        <a class="btn btn-orange" href="arquivados.html">
+          📂 OS Arquivadas
+        </a>
+
+        <!-- Botão Clientes -->
+        <a class="btn btn-purple" href="clientes.html">
+          👥 Clientes
+        </a>
       </div>
       <div class="footer">Mobile • by Josias Santos</div>
     </div>
   </div>
-
-<script>
-  const user = localStorage.getItem("usuarioLogado");
-  if (!user) {
-    // location.href = "index.html";
-  }
-  document.getElementById("btnSair").onclick = () => {
-    localStorage.removeItem("usuarioLogado");
-    location.href = "index.html";
-  };
-</script>
 </body>
 </html>
